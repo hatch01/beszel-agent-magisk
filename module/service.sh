@@ -6,15 +6,20 @@
 #   service       → fork_dont_care (NON-BLOCKING fire-and-forget)
 # So this script must background its own supervisor and EXIT quickly.
 #
-# Config: $MODDIR/.env  (KEY / TOKEN / HUB_URL [/ FILESYSTEM / DATA_DIR])
+# Config: $CONFIG_DIR/beszel-agent.env
+#          (KEY / TOKEN / HUB_URL [/ FILESYSTEM / DATA_DIR])
+# Kept outside /data/adb/modules so module updates cannot wipe it. The in-module
+# .env is a symlink to it; the second choice is for pre-1.1 installs.
 
 MODDIR=${0%/*}
 BIN="$MODDIR/bin/beszel-agent"
-ENV_FILE="$MODDIR/.env"
-LOG="$MODDIR/beszel-agent.log"
-PIDFILE="$MODDIR/supervise.pid"
+CONFIG_DIR=/data/adb/beszel-agent
+LOG="$CONFIG_DIR/beszel-agent.log"
+PIDFILE="$CONFIG_DIR/supervise.pid"
+ENV_FILE="$CONFIG_DIR/beszel-agent.env"
+[ -f "$ENV_FILE" ] || ENV_FILE="$MODDIR/.env"
 # Persistent agent state (fingerprint). Must be writable and survive reboot.
-DEFAULT_DATA_DIR="$MODDIR/data"
+DEFAULT_DATA_DIR="$CONFIG_DIR/data"
 
 # Backoff after unexpected agent exit: 1s → 2s → 4s → … → 300s cap.
 # Reset to MIN after a run that stayed up at least RESET_AFTER_SECS.
@@ -108,6 +113,7 @@ fi
 
 [ -n "$FILESYSTEM" ] || FILESYSTEM="/data"
 [ -n "$DATA_DIR" ] || DATA_DIR="$DEFAULT_DATA_DIR"
+mkdir -p "$CONFIG_DIR" 2>/dev/null
 mkdir -p "$DATA_DIR" 2>/dev/null
 chmod 700 "$DATA_DIR" 2>/dev/null
 
