@@ -40,8 +40,6 @@ pack() {
   cp -a "$MODULE"/. "$stage"/
   if [ "$include_env" != "1" ]; then
     rm -f "$stage/.env"
-  else
-    [ -f "$stage/.env" ] || { echo "module/.env missing for personal zip" >&2; exit 1; }
   fi
   find "$stage" -name '.DS_Store' -delete 2>/dev/null || true
 
@@ -71,8 +69,15 @@ pub="$DIST/beszel-agent-magisk-${version}.zip"
 personal="$DIST/beszel-agent-magisk-${version}-personal.zip"
 
 pack "$pub" 0
-pack "$personal" 1
 
 echo
 echo "Publish : $pub"
-echo "Personal: $personal"
+
+# Personal zip carries module/.env (gitignored). Skipped when absent so a plain
+# checkout still produces a usable publishable zip.
+if [ -f "$MODULE/.env" ]; then
+  pack "$personal" 1
+  echo "Personal: $personal"
+else
+  echo "Personal: skipped (no module/.env)"
+fi
